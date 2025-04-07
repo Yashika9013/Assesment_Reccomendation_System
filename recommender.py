@@ -2,27 +2,23 @@
 from sentence_transformers import SentenceTransformer, util
 
 # Load model once globally
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('model/all-MiniLM-L6-v2')
 
-SIMILARITY_THRESHOLD = 0.5  # Only include results above this threshold
 
+SIMILARITY_THRESHOLD = 0.3  # Only include results above this threshold
 def recommend_assessments(user_input, shl_catalog, top_n=10):
-    """
-    Recommend SHL assessments based on semantic similarity of user input.
-    """
     user_embedding = model.encode(user_input, convert_to_tensor=True)
     catalog_texts = [item["name"] + " " + item["description"] for item in shl_catalog]
     catalog_embeddings = model.encode(catalog_texts, convert_to_tensor=True)
 
     similarity_scores = util.cos_sim(user_embedding, catalog_embeddings)[0]
     
-    # Filter and sort based on similarity threshold
-    scored_items = [
-        (float(score), item)
-        for score, item in zip(similarity_scores, shl_catalog)
-        if float(score) >= SIMILARITY_THRESHOLD
-    ]
-    scored_items.sort(reverse=True, key=lambda x: x[0])
+    # Sort all and just return top N
+    scored_items = sorted(
+        zip(similarity_scores, shl_catalog),
+        key=lambda x: float(x[0]),
+        reverse=True
+    )
 
     return [item for _, item in scored_items[:top_n]]
 
